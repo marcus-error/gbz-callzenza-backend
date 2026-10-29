@@ -1,0 +1,458 @@
+{
+  "info": {
+    "name": "CallZenza Multi-Tenant API Collection",
+    "description": "Comprehensive Postman collection for CallZenza additive multi-tenant modules (15 modules).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000", "type": "string" },
+    { "key": "token", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Module 1: Tenants",
+      "item": [
+        {
+          "name": "List Tenants",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/tenants",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Create Tenant",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/tenants",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Corp\",\n  \"slug\": \"acme-corp\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Tenant",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/tenants/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Update Tenant",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/tenants/:id",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Enterprises\",\n  \"status\": \"active\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Tenant (Soft)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/tenants/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 2: Auth Password Reset",
+      "item": [
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/forgot-password",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/reset-password",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"<signed_token>\",\n  \"new_password\": \"newSecretPassword123!\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 3: Organizations",
+      "item": [
+        {
+          "name": "List Organizations",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/organizations",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Create Organization",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/organizations",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sales Department\",\n  \"org_type\": \"DEPARTMENT\",\n  \"code\": \"DEPT-SALES\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Organization",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/organizations/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Update Organization",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/organizations/:id",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Global Sales Department\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Organization",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/organizations/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 4: Tenant Users",
+      "item": [
+        {
+          "name": "List Tenant Users",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/tenant/users",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Create Tenant User",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/tenant/users",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"agent@tenant.com\",\n  \"password\": \"SecurePass123!\",\n  \"full_name\": \"John Doe\",\n  \"role\": \"VOICE_AGENT\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Invite Tenant User",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/tenant/users/invite",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newagent@tenant.com\",\n  \"full_name\": \"Jane Smith\",\n  \"role\": \"SUPERVISOR\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 5: Roles & Permissions",
+      "item": [
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/roles",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Create Custom Role",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/roles",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Escalation Specialist\",\n  \"description\": \"Handles high-priority transfers\",\n  \"permission_ids\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "List Permissions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/permissions",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 6: Tenant Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard KPIs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/tenant/dashboard",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 7: Branding",
+      "item": [
+        {
+          "name": "Get Branding",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/branding",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Update Branding",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/branding",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Apex Financial\",\n  \"primary_color\": \"#2563EB\",\n  \"logo_url\": \"https://example.com/logo.png\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 8: Plans & Subscriptions",
+      "item": [
+        {
+          "name": "List Public Plans",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/plans",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Get Current Subscription",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/subscriptions/current",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Subscribe to Plan",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/subscriptions",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan_id\": \"<plan_id>\",\n  \"auto_renew\": true\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 9: Notifications",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/notifications?channel=EMAIL",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Send Notification",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/notifications",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel\": \"EMAIL\",\n  \"recipient\": \"client@example.com\",\n  \"subject\": \"Campaign Alert\",\n  \"content\": \"Your campaign is ready.\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 10: Audit Logs",
+      "item": [
+        {
+          "name": "Query Audit Logs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/audit-logs?limit=50",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 11: Reports Export",
+      "item": [
+        {
+          "name": "Export Calls CSV",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/export/calls?format=csv",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Export Leads Excel",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/export/leads?format=excel",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Export Campaigns PDF",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reports/export/campaigns?format=pdf",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 12: Tenant Settings",
+      "item": [
+        {
+          "name": "Get Settings",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/tenant/settings",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Update Settings",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/tenant/settings",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"timezone\": \"America/New_York\",\n  \"calling_hours_start\": \"08:30\",\n  \"calling_hours_end\": \"17:30\",\n  \"retry_limit\": 4\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 14: Files",
+      "item": [
+        {
+          "name": "List Files",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/files",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Upload File",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/files",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Download File",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/files/:id/download",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Delete File",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/files/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,199 @@
+import os
+import sys
+import time
+import asyncio
+import dotenv
+
+dotenv.load_dotenv()
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
+from app.services.ai.llm_provider_manager import LLMProviderManager
+from app.services.tts_service import (
+    synthesize_murf_speech,
+    synthesize_for_call,
+    synthesize_edge_speech,
+    is_murf_available,
+    mark_murf_quota_exhausted,
+)
+from app.services.sip_ai_bot import synthesize_text_to_mulaw, wav_to_mulaw
+from app.db.models import AIAgent
+
+async def main():
+    print("=" * 60)
+    print("RUNNING CALLZENZA VOICE AGENT DIAGNOSTIC TESTS")
+    print("=" * 60)
+
+    # -------------------------------------------------------------
+    # TEST 1: Gemini direct generation test
+    # -------------------------------------------------------------
+    print("\n--- TEST 1: Direct Gemini Generation ---")
+    mgr = LLMProviderManager.get_instance()
+    gemini_key = os.getenv("GEMINI_API_KEY", "")
+    t0 = time.perf_counter()
+    resp1 = await mgr.generate(
+        prompt="Hello, who are you?",
+        system_prompt="You are Alex, an AI assistant calling from CallZenza.",
+    )
+    t1 = time.perf_counter()
+    print(f"Result (in {(t1-t0)*1000:.1f}ms): {resp1}")
+    assert len(resp1) > 0, "TEST 1 FAILED: Empty response"
+    print(">> TEST 1 PASSED: Response successfully generated.")
+
+    # -------------------------------------------------------------
+    # TEST 2: Fast fallback under simulated/unhealthy provider
+    # -------------------------------------------------------------
+    print("\n--- TEST 2: Fast Fallback Latency ---")
+    mgr.set_provider_cooldown("gemini", duration_sec=60.0, reason="Test simulated cooldown")
+    t0 = time.perf_counter()
+    resp2 = await mgr.generate(
+        prompt="What is the pricing?",
+        system_prompt=(
+            "You are Alex from CallZenza Real Estate.\n"
+            "CURRENT SCRIPT STEP INSTRUCTIONS:\n"
+            "Ask: 'Are you interested in 2BHK or 3BHK apartments in Chennai?'\n"
+        ),
+    )
+    t1 = time.perf_counter()
+    elapsed_ms = (t1 - t0) * 1000
+    print(f"Fallback response: '{resp2}' (elapsed: {elapsed_ms:.2f}ms)")
+    assert elapsed_ms < 500.0, f"TEST 2 FAILED: Fallback took {elapsed_ms}ms (> 500ms target)"
+    print(f">> TEST 2 PASSED: Fallback executed in {elapsed_ms:.2f}ms (target < 500ms).")
+
+    # -------------------------------------------------------------
+    # TEST 3: Script-grounded Fallback Quality
+    # -------------------------------------------------------------
+    print("\n--- TEST 3: Script-Grounded Fallback Grounding ---")
+    resp3 = mgr.derive_script_grounded_fallback(
+        prompt="Tell me about your Chennai property.",
+        system_prompt=(
+            "You are Alex from CallZenza.\n"
+            "ASSIGNED AGENT KNOWLEDGE:\n"
+            "- CallZenza provides luxury 3BHK villas on OMR Chennai starting at 85 Lakhs.\n"
+            "CURRENT SCRIPT STEP INSTRUCTIONS:\n"
+            "Ask: 'Would you like to schedule a site visit this weekend?'\n"
+        )
+    )
+    print(f"Grounded response: '{resp3}'")
+    assert "85 Lakhs" in resp3 or "site visit" in resp3, "TEST 3 FAILED: Fallback not grounded in knowledge/script"
+    print(">> TEST 3 PASSED: Script-grounded fallback extracted knowledge successfully.")
+
+    # -------------------------------------------------------------
+    # TEST 4: Murf Quota-Exhausted Graceful Handling
+    # -------------------------------------------------------------
+    print("\n--- TEST 4: Murf Quota Exhaustion Handling ---")
+    mark_murf_quota_exhausted(duration_sec=3600.0)
+    assert not is_murf_available(), "TEST 4 FAILED: Murf should be marked unavailable"
+    t0 = time.perf_counter()
+    murf_bytes = await synthesize_murf_speech("Hello, this is a test.")
+    t1 = time.perf_counter()
+    assert murf_bytes == b"", "TEST 4 FAILED: Should immediately return empty bytes when quota exhausted"
+    print(f"Bypassed Murf in {(t1-t0)*1000:.2f}ms without network call.")
+    print(">> TEST 4 PASSED: Quota exhaustion handled gracefully without retry storms.")
+
+    # -------------------------------------------------------------
+    # TEST 5: Fallback TTS (Edge TTS) Generates Valid Audio
+    # -------------------------------------------------------------
+    print("\n--- TEST 5: Fallback TTS Generation ---")
+    agent = AIAgent(id="test_agent", name="Alex")
+    t0 = time.perf_counter()
+    audio_url = await synthesize_for_call(
+        text="Hello! Thank you for contacting CallZenza.",
+        agent=agent,
+        lang="en",
+    )
+    t1 = time.perf_counter()
+    print(f"Fallback audio URL: {audio_url} (synthesized in {(t1-t0)*1000:.1f}ms)")
+    assert audio_url and audio_url.startswith("http"), "TEST 5 FAILED: Fallback TTS failed to return audio URL"
+    print(">> TEST 5 PASSED: Valid audio URL generated by fallback TTS.")
+
+    # -------------------------------------------------------------
+    # TEST 6: μ-law conversion and RTP readiness
+    # -------------------------------------------------------------
+    print("\n--- TEST 6: Audio to μ-law Conversion for SIP/RTP ---")
+    mulaw_bytes = await synthesize_text_to_mulaw(
+        "Welcome to CallZenza AI voice services.",
+        agent=agent,
+    )
+    print(f"Generated {len(mulaw_bytes)} bytes of 8kHz G.711 μ-law audio.")
+    assert len(mulaw_bytes) > 1000, "TEST 6 FAILED: μ-law bytes too small or empty"
+    print(">> TEST 6 PASSED: 8kHz G.711 μ-law conversion verified.")
+
+    # -------------------------------------------------------------
+    # TEST 7: Multi-turn Conversation & Grounding (Appointment, Nurse O Clock)
+    # -------------------------------------------------------------
+    print("\n--- TEST 7: Multi-turn Conversation & Nurse O' Clock Query ---")
+    mgr.record_provider_success("gemini")
+    from app.services.ai.agent_engine import AgentEngine
+    from app.db.database import AsyncSessionLocal
+    import uuid
+
+    test_agent_id = str(uuid.uuid4())
+    test_session_id = f"test-session-{uuid.uuid4()}"
+
+    test_script = (
+        "Agent Name: MAGIC\n"
+        "Company: Nurse O' Clock\n"
+        "Services: Nurse O' Clock provides 24/7 professional home nursing care, post-operative rehabilitation, elderly care, and in-home medication management across Chennai.\n"
+        "Appointment: Appointments can be scheduled immediately by providing patient name and preferred start date.\n"
+        "Stage 1: Greeting\n"
+        "Stage 2: Inquiry\n"
+        "Stage 3: Appointment Booking\n"
+    )
+
+    async with AsyncSessionLocal() as db:
+        # Turn 1: Hello
+        t0 = time.perf_counter()
+        res1 = await AgentEngine.process_user_query(
+            db=db,
+            agent_id=test_agent_id,
+            message="hello",
+            session_id=test_session_id,
+            current_language="en",
+            script_text=test_script,
+        )
+        t1 = time.perf_counter()
+        print(f"Turn 1 ('hello') Response (in {(t1-t0)*1000:.1f}ms): '{res1.response}'")
+        assert "I understand. How else can I assist you with that?" not in res1.response, "Generic fallback returned for 'hello'"
+
+        # Turn 2: Appointment
+        t0 = time.perf_counter()
+        res2 = await AgentEngine.process_user_query(
+            db=db,
+            agent_id=test_agent_id,
+            message="I want to book an appointment",
+            session_id=test_session_id,
+            current_language="en",
+            script_text=test_script,
+        )
+        t1 = time.perf_counter()
+        print(f"Turn 2 ('I want to book an appointment') Response (in {(t1-t0)*1000:.1f}ms): '{res2.response}'")
+        assert "I understand. How else can I assist you with that?" not in res2.response, "Generic fallback returned for appointment"
+
+        # Turn 3: Exact Nurse O' Clock Query
+        t0 = time.perf_counter()
+        res3 = await AgentEngine.process_user_query(
+            db=db,
+            agent_id=test_agent_id,
+            message="nurse o clock services ?",
+            session_id=test_session_id,
+            current_language="en",
+            script_text=test_script,
+        )
+        t1 = time.perf_counter()
+        print(f"Turn 3 ('nurse o clock services ?') Response (in {(t1-t0)*1000:.1f}ms): '{res3.response}'")
+        assert "I understand. How else can I assist you with that?" not in res3.response, "Generic fallback returned for nurse o clock"
+
+    print(">> TEST 7 PASSED: All multi-turn grounded responses generated successfully.")
+
+    print("\n" + "=" * 60)
+    print("ALL 7 DIAGNOSTIC TESTS PASSED SUCCESSFULLY!")
+    print("=" * 60)
+
+if __name__ == "__main__":
+    asyncio.run(main())

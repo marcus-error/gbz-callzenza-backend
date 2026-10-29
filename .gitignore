@@ -1,0 +1,41 @@
+# Virtual environments
+venv/
+Venv/
+env/
+ENV/
+
+# Python caching
+__pycache__/
+*.pyc
+
+# Local settings and credentials
+.env
+.env.*
+
+# Dependencies & build outputs
+node_modules/
+package.json
+package-lock.json
+
+# Application logs
+*.log
+backend_requests.log
+
+# Databases
+*.db
+callmira.db
+test_callmira.db
+test.db
+callzenza.db
+
+# Uploads, Audio Cache & Vector Stores
+app/static/uploads/
+app/static/audio/
+app/static/recordings/
+app/static/vector_stores/
+.pytest_cache/
+scratch/
+
+# Sub-repositories and nested frontend prevention
+callmira-frontend/
+frontend/
